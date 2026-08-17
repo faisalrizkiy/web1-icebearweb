@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Letter For You 💌</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --rose:    #d4607a;
+      --rose-lt: #f2a0b0;
+      --cream:   #fdf6f0;
+      --warm:    #f5e6da;
+      --brown:   #7a4f3a;
+      --brown-lt:#c49a82;
+      --text:    #3d2314;
+      --muted:   #a07860;
+      --gold:    #c8965a;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--warm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Lato', sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── BACKGROUND TEXTURE ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(212,96,122,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(200,150,90,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 10%, rgba(242,160,176,0.10) 0%, transparent 45%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── FALLING PETALS ── */
+    .petal {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1;
+      font-size: 16px;
+      animation: petalFall linear infinite;
+      opacity: 0;
+    }
+    @keyframes petalFall {
+      0%   { transform: translateY(-30px) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.7; }
+      90%  { opacity: 0.5; }
+      100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* ── SCREEN SYSTEM ── */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .screen.hidden { display: none; }
+
+    /* ════════════════════════════════
+       OPENING — AMPLOP
+    ════════════════════════════════ */
+    #opening {
+      flex-direction: column;
+      gap: 20px;
+      text-align: center;
+    }
+
+    .tanggal {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .intro-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.5rem, 5vw, 2.2rem);
+      color: var(--text);
+      font-weight: 400;
+    }
+    .intro-title em {
+      color: var(--rose);
+      font-style: italic;
+    }
+
+    /* AMPLOP SVG */
+    .envelope-wrap {
+      cursor: pointer;
+      position: relative;
+      width: 200px;
+      height: 140px;
+      margin: 8px auto;
+      filter: drop-shadow(0 12px 28px rgba(212,96,122,0.3));
+      transition: transform 0.3s;
+    }
+    .envelope-wrap:hover { transform: scale(1.05) rotate(-1deg); }
+
+    .env-body {
+      position: absolute;
+      bottom: 0;
+      width: 200px;
+      height: 120px;
+      background: linear-gradient(160deg, #f9e4d4 0%, #f0cbb8 100%);
+      border-radius: 4px 4px 12px 12px;
+      border: 1.5px solid var(--brown-lt);
+    }
+    .env-body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, transparent 49%, rgba(192,140,110,0.15) 49%, rgba(192,140,110,0.15) 51%, transparent 51%),
+        linear-gradient(225deg, transparent 49%, rgba(192,140,110,0.15) 49%, rgba(192,140,110,0.15) 51%, transparent 51%);
+      border-radius: 0 0 12px 12px;
+    }
+
+    .env-flap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      border-left: 100px solid transparent;
+      border-right: 100px solid transparent;
+      border-top: 70px solid #e8b898;
+      transform-origin: top center;
+      transition: transform 0.7s cubic-bezier(0.4,0,0.2,1);
+      filter: drop-shadow(0 2px 4px rgba(120,70,40,0.15));
+    }
+    .env-flap.open {
+      transform: rotateX(180deg);
+    }
+
+    .env-seal {
+      position: absolute;
+      top: 55px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 26px;
+      z-index: 2;
+      transition: opacity 0.4s;
+    }
+    .env-seal.hide { opacity: 0; }
+
+    .env-letter {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%) translateY(0);
+      width: 170px;
+      height: 90px;
+      background: var(--cream);
+      border-radius: 4px;
+      border: 1px solid #e0c8b8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--rose);
+      transition: transform 0.6s 0.5s ease;
+    }
+    .env-letter.peek {
+      transform: translateX(-50%) translateY(-60px);
+    }
+
+    .tap-hint {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    /* ════════════════════════════════
+       MAIN CONTENT CARD
+    ════════════════════════════════ */
+    #main { flex-direction: column; }
+
+    .card {
+      width: min(360px, 94vw);
+      background: var(--cream);
+      border-radius: 20px;
+      box-shadow:
+        0 2px 0 rgba(255,255,255,0.9) inset,
+        0 20px 50px rgba(80,30,10,0.16),
+        0 4px 12px rgba(80,30,10,0.08);
+      overflow: hidden;
+      animation: riseUp 0.5s ease both;
+    }
+    @keyframes riseUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-bar {
+      background: linear-gradient(90deg, var(--rose), #c04870);
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-bar span {
+      font-size: 12px;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.08em;
+    }
+    .musik-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 20px;
+      color: white;
+      font-size: 12px;
+      padding: 4px 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .musik-btn:hover { background: rgba(255,255,255,0.35); }
+
+    .photo-area {
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: var(--warm);
+      position: relative;
+      overflow: hidden;
+    }
+    .photo-area.no-photo { aspect-ratio: unset; height: 0; }
+
+    .photo-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.45s ease;
+    }
+    .photo-layer.active { opacity: 1; }
+
+    .text-area {
+      padding: 22px 24px 14px;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .ucapan {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(16px, 4vw, 20px);
+      color: var(--text);
+      line-height: 1.7;
+      text-align: center;
+      font-style: italic;
+      animation: fadeUp 0.4s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .progress-wrap {
+      padding: 0 24px 6px;
+      display: flex;
+      gap: 4px;
+    }
+    .prog-bar {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: #e8d8d0;
+      transition: background 0.3s;
+    }
+    .prog-bar.done { background: var(--rose); }
+
+    .card-nav {
+      padding: 10px 20px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-nav .step-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+    .next-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(135deg, var(--rose), #b03460);
+      color: white;
+      font-family: 'Lato', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(212,96,122,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .next-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(212,96,122,0.5); }
+    .next-btn:active { transform: scale(0.97); }
+
+    /* ════════════════════════════════
+       ENDING
+    ════════════════════════════════ */
+    #ending { flex-direction: column; }
+
+    .ending-card {
+      width: min(340px, 94vw);
+      background: var(--cream);
+      border-radius: 20px;
+      padding: 40px 28px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(80,30,10,0.16);
+      animation: riseUp 0.5s ease both;
+    }
+    .ending-card .big { font-size: 52px; margin-bottom: 14px; display: block; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+    .ending-card h2 { font-family:'Playfair Display',serif; font-size:24px; color:var(--text); margin-bottom:10px; }
+    .ending-card p  { font-size:14px; color:var(--muted); line-height:1.7; }
+    .signature {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      color: var(--rose);
+      margin-top: 22px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ OPENING ══ -->
+  <div class="screen" id="opening">
+    <p class="tanggal" id="tgl"></p>
+    <h1 class="intro-title">There's a <em>letter</em> for you ✉️</h1>
+    <div class="envelope-wrap" id="amplopWrap">
+      <div class="env-letter" id="envLetter">💌</div>
+      <div class="env-body"></div>
+      <div class="env-flap" id="envFlap"></div>
+      <div class="env-seal" id="envSeal">❤️</div>
+    </div>
+    <p class="tap-hint">— tap the envelope to open —</p>
+  </div>
+
+  <!-- ══ MAIN ══ -->
+  <div class="screen hidden" id="main">
+    <div class="card">
+      <div class="card-bar">
+        <span id="cardDate"></span>
+        <button class="musik-btn" id="musikBtn">⏸ Music</button>
+      </div>
+
+      <div class="photo-area" id="photoArea">
+        <img class="photo-layer" id="layerA" src="" alt="">
+        <img class="photo-layer" id="layerB" src="" alt="">
+      </div>
+
+      <div class="text-area">
+        <p class="ucapan" id="ucapanTeks"></p>
+      </div>
+
+      <div class="progress-wrap" id="progressWrap"></div>
+
+      <div class="card-nav">
+        <span class="step-label" id="stepLabel"></span>
+        <button class="next-btn" id="nextBtn">Next 😊</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ENDING ══ -->
+  <div class="screen hidden" id="ending">
+    <div class="ending-card">
+      <span class="big">🌸</span>
+      <h2>Thank you for listening to my heart 🌸</h2>
+      <p>I only wish for your absolute happiness,<br>today, tomorrow, and always. ✨</p>
+      <p class="signature">— From: ICEBEAR ❤️</p>
+    </div>
+  </div>
+
+  <!-- MUSIK & KLIK -->
+  <audio id="musik" src="musik1.mp3" loop></audio>
+  <audio id="klik"  src="klik.mp3"  preload="auto"></audio>
+
+  <script>
+    /* ══ FIXED 10 SLIDES ══ */
+    const konten = [
+      { ucapan: "Hello... there is something that I've been meaning to tell you 💌" },
+      { ucapan: "To be honest, it wasn't easy for me to find the right words to write this..." },
+      { ucapan: "But keeping it all to myself has become so much harder lately 😅" },
+      { gambar: "gambar1.jpg", ucapan: "I don't even know exactly when or how it started..." },
+      { gambar: "gambar2.jpg", ucapan: "But somewhere along the way, you beautifully became a part of my everyday thoughts 🌸" },
+      { ucapan: "Whenever I'm having a rough day, your smile is always the first thing that crosses my mind 😶" },
+      { gambar: "gambar3.jpg", ucapan: "And that made me realize... what I feel for you is real, and it runs deep 💭" },
+      { gambar: "gambar4.jpg", ucapan: "Would you allow me to walk by your side, a little closer than before? 🤍" },
+      { ucapan: "Because truthfully, I didn't want to live with the regret of never letting you know 🌙" },
+      { ucapan: "So... would you accept these genuine feelings of mine? 🥺" }
+    ];
+
+    let   idx         = 0;
+    let   activeLayer = 'A';
+    let   musikPlay   = false;
+
+    /* ══ UTILS ══ */
+    const $ = id => document.getElementById(id);
+    function showScreen(id) {
+      ['opening','main','ending'].forEach(s => {
+        $(s).classList.toggle('hidden', s !== id);
+      });
+    }
+    function playKlik() {
+      const k = $('klik');
+      k.currentTime = 0;
+      k.volume = 0.6;
+      k.play().catch(()=>{});
+    }
+
+    /* ── PETALS ── */
+    const PETALS = ['🌸','💖','💗','🌺','✨','💕'];
+    function spawnPetal() {
+      const el = document.createElement('span');
+      el.className = 'petal';
+      el.textContent = PETALS[Math.floor(Math.random() * PETALS.length)];
+      el.style.left   = Math.random() * 100 + 'vw';
+      el.style.fontSize = (10 + Math.random() * 12) + 'px';
+      const dur = 4 + Math.random() * 5;
+      el.style.animationDuration = dur + 's';
+      el.style.animationDelay    = (Math.random() * 2) + 's';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), (dur + 3) * 1000);
+    }
+    setInterval(spawnPetal, 900);
+
+    /* ── DATE FORMATTING ── */
+    const now = new Date();
+    const fmt = now.toLocaleString('en-US', { dateStyle:'full', timeStyle:'short' });
+    $('tgl').textContent     = fmt;
+    $('cardDate').textContent = fmt;
+
+    /* ── ENVELOPE INTERACTION ── */
+    $('amplopWrap').addEventListener('click', bukaAmplop);
+
+    function bukaAmplop() {
+      $('amplopWrap').removeEventListener('click', bukaAmplop);
+      playKlik();
+
+      $('envFlap').classList.add('open');
+      $('envSeal').classList.add('hide');
+
+      setTimeout(() => {
+        $('envLetter').classList.add('peek');
+      }, 400);
+
+      setTimeout(() => {
+        mulai();
+      }, 1200);
+    }
+
+    function mulai() {
+      showScreen('main');
+      buildProgress();
+
+      const m = $('musik');
+      m.volume = 0;
+      m.play().then(() => {
+        musikPlay = true;
+        let v = 0;
+        const t = setInterval(() => {
+          v = Math.min(1, v + 0.05);
+          m.volume = v;
+          if (v >= 1) clearInterval(t);
+        }, 150);
+      }).catch(()=>{});
+
+      konten.forEach(k => { if (k.gambar) new Image().src = k.gambar; });
+      tampilKonten();
+    }
+
+    /* ── MUSIC TOGGLE ── */
+    $('musikBtn').addEventListener('click', () => {
+      const m = $('musik');
+      if (m.paused) {
+        m.play();
+        musikPlay = true;
+        $('musikBtn').textContent = '⏸ Music';
+      } else {
+        m.pause();
+        musikPlay = false;
+        $('musikBtn').textContent = '▶ Music';
+      }
+    });
+
+    /* ── PROGRESS DOTS ── */
+    function buildProgress() {
+      const wrap = $('progressWrap');
+      wrap.innerHTML = '';
+      konten.forEach((_, i) => {
+        const b = document.createElement('div');
+        b.className = 'prog-bar' + (i < idx ? ' done' : '');
+        b.id = 'pb-' + i;
+        wrap.appendChild(b);
+      });
+    }
+
+    function updateProgress() {
+      konten.forEach((_, i) => {
+        const b = $('pb-' + i);
+        if (b) b.classList.toggle('done', i < idx);
+      });
+    }
+
+    /* ── PHOTO CROSSFADE ── */
+    function setPhoto(src) {
+      const photoArea = $('photoArea');
+      if (!src) {
+        photoArea.classList.add('no-photo');
+        $('layerA').classList.remove('active');
+        $('layerB').classList.remove('active');
+        return;
+      }
+      photoArea.classList.remove('no-photo');
+
+      const next  = activeLayer === 'A' ? 'B' : 'A';
+      const curEl = $('layer' + activeLayer);
+      const nxtEl = $('layer' + next);
+
+      nxtEl.src = src;
+      const doSwap = () => {
+        nxtEl.onload = null;
+        nxtEl.classList.add('active');
+        curEl.classList.remove('active');
+        activeLayer = next;
+      };
+      nxtEl.onload = doSwap;
+      if (nxtEl.complete && nxtEl.naturalWidth) doSwap();
+    }
+
+    /* ── CONTENT DISPLAY (TYPING EFFECT) ── */
+    function tampilKonten() {
+      if (idx >= konten.length) {
+        showEnding();
+        return;
+      }
+
+      playKlik();
+
+      const item = konten[idx];
+      $('stepLabel').textContent = `${idx + 1} / ${konten.length}`;
+      updateProgress();
+
+      setPhoto(item.gambar || null);
+
+      const el = $('ucapanTeks');
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = '';
+      el.textContent = '';
+
+      let i = 0;
+      const interval = setInterval(() => {
+        el.textContent += item.ucapan[i++];
+        if (i >= item.ucapan.length) clearInterval(interval);
+      }, 45);
+
+      idx++;
+
+      const btn = $('nextBtn');
+      btn.textContent = idx >= konten.length ? 'Finish ❤️' : 'Next 😊';
+      btn.onclick = tampilKonten;
+    }
+
+    /* ── DIRECT ENDING SCREEN ── */
+    function showEnding() {
+      showScreen('ending');
+      jalankanConfetti();
+    }
+
+    /* ── CONFETTI EFFECT ── */
+    function jalankanConfetti() {
+      const end = Date.now() + 2500;
+      const colors = ['#e8567a','#f9b8c4','#d4a57a','#fce4ec','#fff'];
+      ;(function frame() {
+        confetti({
+          particleCount: 6,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors,
+          zIndex: 9999
+        });
+        confetti({
+          particleCount: 6,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors,
+          zIndex: 9999
+        });
+        if (Date.now() < end) requestAnimationFrame(frame);
+      })();
+    }
+  </script>
+</body>
+</html>
